@@ -15,6 +15,8 @@ import (
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
 )
 
+var virtualMachineResourceName = "azurerm_virtual_machine"
+
 func resourceArmVirtualMachine() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceArmVirtualMachineCreate,
@@ -248,6 +250,7 @@ func resourceArmVirtualMachine() *schema.Resource {
 			"storage_data_disk": {
 				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -610,6 +613,9 @@ func resourceArmVirtualMachineCreate(d *schema.ResourceData, meta interface{}) e
 		vm.Plan = plan
 	}
 
+	azureRMLockByName(name, virtualMachineResourceName)
+	defer azureRMUnlockByName(name, virtualMachineResourceName)
+
 	future, err := client.CreateOrUpdate(ctx, resGroup, name, vm)
 	if err != nil {
 		return err
@@ -766,6 +772,9 @@ func resourceArmVirtualMachineDelete(d *schema.ResourceData, meta interface{}) e
 	}
 	resGroup := id.ResourceGroup
 	name := id.Path["virtualMachines"]
+
+	azureRMLockByName(name, virtualMachineResourceName)
+	defer azureRMUnlockByName(name, virtualMachineResourceName)
 
 	future, err := client.Delete(ctx, resGroup, name)
 	if err != nil {
